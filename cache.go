@@ -2,13 +2,13 @@ package lcache
 
 
 // @author  Mikhail Kirillov <mikkirillov@yandex.ru>
-// @version 1.002
-// @date    2018-01-16
+// @version 1.003
+// @date    2018-01-17
 
 
 import (
-  "github.com/belfinor/cache/node"
-  "github.com/belfinor/cache/ring"
+  "github.com/belfinor/lcache/node"
+  "github.com/belfinor/lcache/ring"
   "github.com/belfinor/Helium/hash/consistent"
   "time"
 )
