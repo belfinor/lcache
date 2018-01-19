@@ -72,3 +72,10 @@ func (n *Node) Size() int {
   return len(n.data)
 }
 
+
+func (n *Node) Flush() {
+  n.Lock()
+  defer n.Unlock()
+  n.data = make( map[string]*Item )
+}
+

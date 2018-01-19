@@ -2,8 +2,8 @@ package node
 
 
 // @author  Mikhail Kirillov <mikkirillov@yandex.ru>
-// @version 1.000
-// @date    2018-01-16
+// @version 1.001
+// @date    2018-01-19
 
 
 import (

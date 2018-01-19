@@ -124,3 +124,10 @@ func (c *Cache) Fetch( key string, f FETCH_FUNC ) interface{} {
   return v
 }
 
+
+func (c *Cache) Flush() {
+  for _, n := range c.nodes {
+    n.Flush()
+  }
+}
+
