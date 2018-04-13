@@ -2,8 +2,8 @@ package node
 
 
 // @author  Mikhail Kirillov <mikkirillov@yandex.ru>
-// @version 1.001
-// @date    2018-01-16
+// @version 1.002
+// @date    2018-04-13
 
 
 import (
@@ -12,7 +12,7 @@ import (
 
 
 type Node struct {
-  sync.Mutex
+  sync.RWMutex
   data map[string]*Item
 }
 
@@ -23,8 +23,8 @@ func New() *Node {
 
 
 func (n *Node) Get( key string ) interface{} {
-  n.Lock()
-  defer n.Unlock()
+  n.RLock()
+  defer n.RUnlock()
 
   if v, h := n.data[key] ; h && v.IsAlive() {
     return v.Data
