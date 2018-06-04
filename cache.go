@@ -2,8 +2,8 @@ package lcache
 
 
 // @author  Mikhail Kirillov <mikkirillov@yandex.ru>
-// @version 1.003
-// @date    2018-01-17
+// @version 1.004
+// @date    2018-06-04
 
 
 import (
@@ -19,6 +19,7 @@ type Cache struct {
   buffer   *ring.Ring
   nodesNum int
   input    chan string
+  finish   chan bool
   clean    int
   size     int
   hash     *consistent.Hash
@@ -41,6 +42,7 @@ func New( cfg *Config ) *Cache {
   }
 
   c.input = make( chan string, cfg.InputBuffer )
+  c.finish = make( chan bool )
 
   c.buffer = ring.New( cfg.Size )
   c.size   = cfg.Size
@@ -57,20 +59,29 @@ func New( cfg *Config ) *Cache {
 }
 
 
+func (c *Cache) Close() {
+  close( c.input )
+  <- c.finish
+  close( c.finish )
+}
+
+
 func (c *Cache) worker() {
 
   for {
 
-    select {
-    case key := <- c.input:
+    key, alive := <- c.input
 
-      c.buffer.Add( key )
-
-      if c.buffer.Size() == c.size {
-        c.gc()
-      }
+    if !alive {
+      c.finish <- true
+      break
     }
 
+    c.buffer.Add( key )
+
+    if c.buffer.Size() == c.size {
+      c.gc()
+    }
   }
 }
 
