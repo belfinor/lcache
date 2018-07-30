@@ -66,3 +66,7 @@ func (a *Atom) Fetch(fn ATOM_FETCH_FUNC) interface{} {
 
 	return v
 }
+
+func (a *Atom) Reset() {
+	a.Set(nil)
+}

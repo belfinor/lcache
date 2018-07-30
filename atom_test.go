@@ -35,4 +35,14 @@ func TestAtom(t *testing.T) {
 	if v != nil {
 		t.Fatal("Atom set nil not work")
 	}
+
+	cache.Set(1)
+	if cache.Get() == nil {
+		t.Fatal("Atom set it not work")
+	}
+
+	cache.Reset()
+	if cache.Get() != nil {
+		t.Fatal("Atom Reset not work")
+	}
 }
