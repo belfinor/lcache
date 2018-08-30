@@ -1,70 +1,90 @@
 package node
 
-
 // @author  Mikhail Kirillov <mikkirillov@yandex.ru>
-// @version 1.001
-// @date    2018-01-19
-
+// @version 1.002
+// @date    2018-08-30
 
 import (
-  "testing"
-  "time"
+	"testing"
+	"time"
 )
 
+func Test(t *testing.T) {
 
-func Test( t *testing.T ) {
+	n := New()
 
-  n := New()
+	if n.Get("1") != nil {
+		t.Fatal("Empty node Get error")
+	}
 
-  if n.Get( "1" ) != nil {
-    t.Fatal( "Empty node Get error" )
-  }
+	if !n.Set("1", "123", time.Now().Unix()+10) {
+		t.Fatal("Set new entry error")
+	}
 
-  if !n.Set( "1", "123", time.Now().Unix() + 10 ) {
-     t.Fatal( "Set new entry error" )
-  }
+	v := n.Get("1")
 
-  v := n.Get( "1" )
+	if v == nil || v.(string) != "123" {
+		t.Fatal("Get error")
+	}
 
-  if v == nil || v.(string) != "123" {
-    t.Fatal( "Get error" )
-  }
+	n.Expire("1")
 
-  n.Expire( "1" )
+	if n.Get("1") != nil || n.Size() != 1 {
+		t.Fatal("Expire not work")
+	}
 
-  if n.Get("1") != nil || n.Size() != 1 {
-    t.Fatal( "Expire not work" )
-  }
+	if n.Set("1", "345", time.Now().Unix()+10) {
+		t.Fatal("Overrides existing data error")
+	}
 
-  if n.Set( "1", "345", time.Now().Unix() + 10  ) {
-    t.Fatal( "Overrides existing data error" )
-  }
+	v = n.Get("1")
 
-  v = n.Get("1")
+	if v == nil || v.(string) != "345" {
+		t.Fatal("Get error")
+	}
 
-  if v == nil || v.(string) != "345" {
-    t.Fatal( "Get error" )
-  }
+	n.Set("2", []int64{1, 2, 3}, time.Now().Unix()+1)
 
-  n.Set( "2", []int64{ 1, 2, 3 }, time.Now().Unix() + 2 )
+	v = n.Get("2")
 
-  v = n.Get("2")
+	if v == nil || len(v.([]int64)) != 3 || n.Size() != 2 {
+		t.Fatal("BAd store array")
+	}
 
-  if v == nil || len( v.( []int64 ) ) != 3 || n.Size() != 2 {
-    t.Fatal( "BAd store array" )
-  }
+	n.Delete("1")
 
-  n.Delete("1")
+	if n.Get("1") != nil || n.Get("2") == nil || n.Size() != 1 {
+		t.Fatal("Delete not work")
+	}
 
-  if n.Get("1") != nil || n.Get("2" ) == nil || n.Size() != 1 {
-    t.Fatal( "Delete not work" )
-  }
+	if cr, v := n.Inc("2", time.Now().Unix()+1); cr || v != 1 {
+		t.Fatal("Inc for not int64 type not work")
+	}
 
-  <- time.After( time.Second * 3 )
+	if cr, v := n.Inc("2", time.Now().Unix()+1); cr || v != 2 {
+		t.Fatal("Inc for not int64 type not work")
+	}
 
-  if n.Get("2") != nil {
-    t.Fatal( "auto expire not work" )
-  }
-  
+	if cr, v := n.Inc("2", time.Now().Unix()+1); cr || v != 3 {
+		t.Fatal("Inc for not int64 type not work")
+	}
+
+	n.Expire("2")
+
+	if cr, v := n.Inc("2", time.Now().Unix()+1); cr || v != 1 {
+		t.Fatal("Inc for not int64 type not work")
+	}
+
+	n.Delete("2")
+
+	if cr, v := n.Inc("2", time.Now().Unix()+1); !cr || v != 1 {
+		t.Fatal("Inc for not int64 type not work")
+	}
+
+	<-time.After(time.Second * 1)
+
+	if n.Get("2") != nil {
+		t.Fatal("auto expire not work")
+	}
+
 }
-
