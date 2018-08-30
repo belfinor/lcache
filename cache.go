@@ -1,144 +1,142 @@
 package lcache
 
-
 // @author  Mikhail Kirillov <mikkirillov@yandex.ru>
-// @version 1.004
-// @date    2018-06-04
-
+// @version 1.005
+// @date    2018-08-30
 
 import (
-  "github.com/belfinor/lcache/node"
-  "github.com/belfinor/lcache/ring"
-  "github.com/belfinor/Helium/hash/consistent"
-  "time"
+	"time"
+
+	"github.com/belfinor/Helium/hash/consistent"
+	"github.com/belfinor/lcache/node"
+	"github.com/belfinor/lcache/ring"
 )
 
-
 type Cache struct {
-  nodes    []*node.Node
-  buffer   *ring.Ring
-  nodesNum int
-  input    chan string
-  finish   chan bool
-  clean    int
-  size     int
-  hash     *consistent.Hash
-  ttl      int64
+	nodes    []*node.Node
+	buffer   *ring.Ring
+	nodesNum int
+	input    chan string
+	finish   chan bool
+	clean    int
+	size     int
+	hash     *consistent.Hash
+	ttl      int64
 }
 
+type FETCH_FUNC func(key string) interface{}
 
-type FETCH_FUNC func ( key string ) interface{}
+func New(cfg *Config) *Cache {
 
+	c := &Cache{}
 
-func New( cfg *Config ) *Cache {
+	c.nodes = make([]*node.Node, cfg.Nodes)
+	c.nodesNum = cfg.Nodes
 
-  c := &Cache{}
+	for i, _ := range c.nodes {
+		c.nodes[i] = node.New()
+	}
 
-  c.nodes    = make( []*node.Node, cfg.Nodes )
-  c.nodesNum = cfg.Nodes
+	c.input = make(chan string, cfg.InputBuffer)
+	c.finish = make(chan bool)
 
-  for i, _  := range c.nodes {
-    c.nodes[i] = node.New()
-  }
+	c.buffer = ring.New(cfg.Size)
+	c.size = cfg.Size
 
-  c.input = make( chan string, cfg.InputBuffer )
-  c.finish = make( chan bool )
+	c.clean = cfg.Clean
 
-  c.buffer = ring.New( cfg.Size )
-  c.size   = cfg.Size
+	c.ttl = int64(cfg.TTL)
 
-  c.clean = cfg.Clean
+	c.hash = consistent.New(cfg.Nodes)
 
-  c.ttl = int64( cfg.TTL )
+	go c.worker()
 
-  c.hash = consistent.New( cfg.Nodes )
-
-  go c.worker()
-
-  return c
+	return c
 }
-
 
 func (c *Cache) Close() {
-  close( c.input )
-  <- c.finish
-  close( c.finish )
+	close(c.input)
+	<-c.finish
+	close(c.finish)
 }
-
 
 func (c *Cache) worker() {
 
-  for {
+	for {
 
-    key, alive := <- c.input
+		key, alive := <-c.input
 
-    if !alive {
-      c.finish <- true
-      break
-    }
+		if !alive {
+			c.finish <- true
+			break
+		}
 
-    c.buffer.Add( key )
+		c.buffer.Add(key)
 
-    if c.buffer.Size() == c.size {
-      c.gc()
-    }
-  }
+		if c.buffer.Size() == c.size {
+			c.gc()
+		}
+	}
 }
-
 
 func (c *Cache) gc() {
 
-  for i := 0 ; i < c.clean ; i++ {
-    key := c.buffer.Shift()
-    if  key == "" {
-      continue
-    }
+	for i := 0; i < c.clean; i++ {
+		key := c.buffer.Shift()
+		if key == "" {
+			continue
+		}
 
-    n := c.hash.Get( []byte(key) )
-    c.nodes[n].Delete( key )
-  }
+		n := c.hash.Get([]byte(key))
+		c.nodes[n].Delete(key)
+	}
 
 }
 
-
-func (c *Cache ) Get( key string ) interface{} {
-  n := c.hash.Get([]byte(key))
-  return c.nodes[n].Get( key )
+func (c *Cache) Get(key string) interface{} {
+	n := c.hash.Get([]byte(key))
+	return c.nodes[n].Get(key)
 }
 
-
-func (c *Cache) Delete( key string ) {
-  n := c.hash.Get( []byte( key ) )
-  c.nodes[n].Expire( key )
+func (c *Cache) Delete(key string) {
+	n := c.hash.Get([]byte(key))
+	c.nodes[n].Expire(key)
 }
 
-
-func (c *Cache) Set( key string, value interface{} ) {
-  n := c.hash.Get( []byte( key ) )
-  if c.nodes[n].Set( key, value, c.ttl + time.Now().Unix() ) {
-    c.input <- key
-  }
+func (c *Cache) Set(key string, value interface{}) {
+	n := c.hash.Get([]byte(key))
+	if c.nodes[n].Set(key, value, c.ttl+time.Now().Unix()) {
+		c.input <- key
+	}
 }
 
+func (c *Cache) Inc(key string) int64 {
+	n := c.hash.Get([]byte(key))
+	ok, v := c.nodes[n].Inc(key, c.ttl+time.Now().Unix())
 
-func (c *Cache) Fetch( key string, f FETCH_FUNC ) interface{} {
-  n := c.hash.Get( []byte(key) )
-  v := c.nodes[n].Get( key )
+	if ok {
+		c.input <- key
+	}
 
-  if v == nil {
-    v = f(key)
-    if v != nil && c.nodes[n].Set( key, v, c.ttl + time.Now().Unix() ) {
-      c.input <- key
-    }
-  }
-
-  return v
+	return v
 }
 
+func (c *Cache) Fetch(key string, f FETCH_FUNC) interface{} {
+	n := c.hash.Get([]byte(key))
+	v := c.nodes[n].Get(key)
+
+	if v == nil {
+		v = f(key)
+		if v != nil && c.nodes[n].Set(key, v, c.ttl+time.Now().Unix()) {
+			c.input <- key
+		}
+	}
+
+	return v
+}
 
 func (c *Cache) Flush() {
-  for _, n := range c.nodes {
-    n.Flush()
-  }
+	for _, n := range c.nodes {
+		n.Flush()
+	}
 }
-
