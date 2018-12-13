@@ -1,24 +1,18 @@
 package lcache
 
 // @author  Mikhail Kirillov <mikkirillov@yandex.ru>
-// @version 1.005
-// @date    2018-08-30
+// @version 1.006
+// @date    2018-12-13
 
 import (
 	"time"
 
 	"github.com/belfinor/Helium/hash/consistent"
-	"github.com/belfinor/lcache/node"
-	"github.com/belfinor/lcache/ring"
 )
 
 type Cache struct {
-	nodes    []*node.Node
-	buffer   *ring.Ring
+	nodes    []*node
 	nodesNum int
-	input    chan string
-	finish   chan bool
-	clean    int
 	size     int
 	hash     *consistent.Hash
 	ttl      int64
@@ -30,113 +24,67 @@ func New(cfg *Config) *Cache {
 
 	c := &Cache{}
 
-	c.nodes = make([]*node.Node, cfg.Nodes)
+	c.nodes = make([]*node, cfg.Nodes)
 	c.nodesNum = cfg.Nodes
-
-	for i, _ := range c.nodes {
-		c.nodes[i] = node.New()
-	}
-
-	c.input = make(chan string, cfg.InputBuffer)
-	c.finish = make(chan bool)
-
-	c.buffer = ring.New(cfg.Size)
 	c.size = cfg.Size
 
-	c.clean = cfg.Clean
+	for i := 0; i < cfg.Nodes; i++ {
+		c.nodes[i] = makeNode(c.size / cfg.Nodes)
+	}
 
 	c.ttl = int64(cfg.TTL)
 
 	c.hash = consistent.New(cfg.Nodes)
 
-	go c.worker()
-
 	return c
-}
-
-func (c *Cache) Close() {
-	close(c.input)
-	<-c.finish
-	close(c.finish)
-}
-
-func (c *Cache) worker() {
-
-	for {
-
-		key, alive := <-c.input
-
-		if !alive {
-			c.finish <- true
-			break
-		}
-
-		c.buffer.Add(key)
-
-		if c.buffer.Size() == c.size {
-			c.gc()
-		}
-	}
-}
-
-func (c *Cache) gc() {
-
-	for i := 0; i < c.clean; i++ {
-		key := c.buffer.Shift()
-		if key == "" {
-			continue
-		}
-
-		n := c.hash.Get([]byte(key))
-		c.nodes[n].Delete(key)
-	}
-
 }
 
 func (c *Cache) Get(key string) interface{} {
 	n := c.hash.Get([]byte(key))
-	return c.nodes[n].Get(key)
+	return c.nodes[n].get(key)
 }
 
 func (c *Cache) Delete(key string) {
 	n := c.hash.Get([]byte(key))
-	c.nodes[n].Expire(key)
+	c.nodes[n].delete(key)
 }
 
 func (c *Cache) Set(key string, value interface{}) {
 	n := c.hash.Get([]byte(key))
-	if c.nodes[n].Set(key, value, c.ttl+time.Now().Unix()) {
-		c.input <- key
-	}
+	c.nodes[n].set(key, value, c.ttl+time.Now().Unix())
 }
 
 func (c *Cache) Inc(key string) int64 {
 	n := c.hash.Get([]byte(key))
-	ok, v := c.nodes[n].Inc(key, c.ttl+time.Now().Unix())
-
-	if ok {
-		c.input <- key
-	}
-
-	return v
+	return c.nodes[n].inc(key, c.ttl+time.Now().Unix())
 }
 
 func (c *Cache) Fetch(key string, f FETCH_FUNC) interface{} {
 	n := c.hash.Get([]byte(key))
-	v := c.nodes[n].Get(key)
+	v := c.nodes[n].get(key)
 
 	if v == nil {
 		v = f(key)
-		if v != nil && c.nodes[n].Set(key, v, c.ttl+time.Now().Unix()) {
-			c.input <- key
+		if v != nil {
+			c.nodes[n].set(key, v, c.ttl+time.Now().Unix())
 		}
 	}
 
 	return v
 }
 
+func (c *Cache) Size() int {
+	cnt := 0
+
+	for _, n := range c.nodes {
+		cnt += n.size()
+	}
+
+	return cnt
+}
+
 func (c *Cache) Flush() {
 	for _, n := range c.nodes {
-		n.Flush()
+		n.flush()
 	}
 }
