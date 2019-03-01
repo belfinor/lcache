@@ -57,7 +57,7 @@ fmt.Println( cache.Get("1").(string), cache.Get("2").(int64), cache.Get("3") == 
 #### Доступ через кэш (Fetch)
 
 ```
-tm := cache.Fetch( "123", func(k string ) interface{} {
+tm := cache.Fetch( "123", func(k string) interface{} {
   return time.Now().Unix()
   }).(int64)
 ```
@@ -87,4 +87,28 @@ cache.Inc("inc")
 cache.Inc("inc")
 
 fmt.Println( cache.Get("inc").(int64)) // 3
+```
+
+### Атомы кэширования
+
+Атомы кэирования - это прощенная реализация *lcache.Cache*, которая позволяет закэшировать один объект на заданное время. Пример работы с атомом
+
+```
+atom := lcache.NewAtom(600) // TTL = 600
+
+fmt.Println( atom.Get() ) // nil
+
+atom.Set("12")
+
+fmt.Println( atom.Get().(string) ) // 12
+
+atom.Set(nil)
+fmt.Println( atom.Get() ) // nil
+
+res := atom.Fetch( func() interface{} {
+  return []int{1,2,3}
+} )
+
+fmt.Println( res.([]int) ) // [1,2,3]
+
 ```
