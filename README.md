@@ -91,24 +91,33 @@ fmt.Println( cache.Get("inc").(int64)) // 3
 
 ### Атомы кэширования
 
-Атомы кэирования - это прощенная реализация *lcache.Cache*, которая позволяет закэшировать один объект на заданное время. Пример работы с атомом
+Атомы кэширования *lcache.Atom* - это упрощенная реализация *lcache.Cache*, которая позволяет закэшировать один объект на заданное время, после истечения времени значение станет равным *nil*. Пример работы с атомом ниже:
 
 ```
-atom := lcache.NewAtom(600) // TTL = 600
+package main
 
-fmt.Println( atom.Get() ) // nil
+import "fmt"
+import "github.com/belfinor/lcache"
 
-atom.Set("12")
+func main() {
 
-fmt.Println( atom.Get().(string) ) // 12
+  atom := lcache.NewAtom(600) // TTL = 600 секунд
 
-atom.Set(nil)
-fmt.Println( atom.Get() ) // nil
+  fmt.Println( atom.Get() ) // <nil>
 
-res := atom.Fetch( func() interface{} {
-  return []int{1,2,3}
-} )
+  atom.Set("12")
 
-fmt.Println( res.([]int) ) // [1,2,3]
+  fmt.Println( atom.Get().(string) ) // 12
+
+  atom.Set(nil)
+  fmt.Println( atom.Get() ) // <nil>
+
+  res := atom.Fetch( func() interface{} {
+    return []int{1,2,3}
+  } )
+
+  fmt.Println( res.([]int) ) // [1 2 3]
+
+}
 
 ```
