@@ -15,19 +15,22 @@
 
 ## Установка
 
-```go get github.com/belfinor/lcache
+```
+go get github.com/belfinor/lcache
 ```
 
 ## Работа с библиотекой
 
 ### Подключение
 
-```import "github.com/belfinor/lcache"
+```
+import "github.com/belfinor/lcache"
 ```
 
 ### Создание объекта кэша
 
-```var cache *lcache.Cache = lcache.New(&lcache.Config{TTL: 86400, Size: 102400, Nodes: 16})
+```
+var cache *lcache.Cache = lcache.New(&lcache.Config{TTL: 86400, Size: 102400, Nodes: 16})
 ```
 
 В этом примере создается объект кэша, в котором будут хранится максимум 102400 значений, распределенные внутри по 16 нодами (для оптимизации параллельного доступа, а для синхронизации используется RWMutex, свой для каждй ноды) с временем жизни 86400 секунд.
@@ -44,7 +47,8 @@
 
 При помощи методов Get/Set можно задать получить значение из кэша. Если значения в кэше нет, то возвращается *nil*.
 
-```cache.Set("1", "11")
+```
+cache.Set("1", "11")
 cache.Set("2",int64(22))
 
 fmt.Println( cache.Get("1").(string), cache.Get("2").(int64), cache.Get("3") == nil )
@@ -52,7 +56,8 @@ fmt.Println( cache.Get("1").(string), cache.Get("2").(int64), cache.Get("3") == 
 
 #### Доступ через кэш (Fetch)
 
-```tm := cache.Fetch( "123", func(k string ) interface{} {
+```
+tm := cache.Fetch( "123", func(k string ) interface{} {
   return time.Now().Unix()
   }).(int64)
 ```
@@ -64,18 +69,22 @@ fmt.Println( cache.Get("1").(string), cache.Get("2").(int64), cache.Get("3") == 
 
 Удаляет переданный ключ из кэша
 
-```cache.Delete("123")
+```
+cache.Delete("123")
 ```
 
 #### Удаление всех ключей
 
-```cache.Flush()
+```
+cache.Flush()
 ```
 
 #### Инкрементальный счетчик
 
-```cache.Inc("inc")
+```
 cache.Inc("inc")
 cache.Inc("inc")
+cache.Inc("inc")
+
 fmt.Println( cache.Get("inc").(int64)) // 3
 ```
