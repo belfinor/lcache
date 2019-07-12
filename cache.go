@@ -1,20 +1,20 @@
 package lcache
 
 // @author  Mikhail Kirillov <mikkirillov@yandex.ru>
-// @version 1.006
-// @date    2018-12-13
+// @version 1.007
+// @date    2019-07-12
 
 import (
 	"time"
 
-	"github.com/belfinor/Helium/hash/consistent"
+	"github.com/belfinor/chash"
 )
 
 type Cache struct {
 	nodes    []*node
 	nodesNum int
 	size     int
-	hash     *consistent.Hash
+	hash     *chash.Hash
 	ttl      int64
 }
 
@@ -34,7 +34,7 @@ func New(cfg *Config) *Cache {
 
 	c.ttl = int64(cfg.TTL)
 
-	c.hash = consistent.New(cfg.Nodes)
+	c.hash = chash.New(cfg.Nodes)
 
 	return c
 }
