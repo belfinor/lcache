@@ -1,8 +1,8 @@
 package lcache
 
 // @author  Mikhail Kirillov <mikkirillov@yandex.ru>
-// @version 1.007
-// @date    2019-07-12
+// @version 1.008
+// @date    2019-07-19
 
 import (
 	"time"
@@ -23,6 +23,18 @@ type FETCH_FUNC func(key string) interface{}
 func New(cfg *Config) *Cache {
 
 	c := &Cache{}
+
+	if cfg == nil {
+		cfg = &Config{
+			TTL:   3600,
+			Nodes: 4,
+			Size:  1024,
+		}
+	}
+
+	if cfg.Nodes < 1 {
+		cfg.Nodes = 1
+	}
 
 	c.nodes = make([]*node, cfg.Nodes)
 	c.nodesNum = cfg.Nodes
