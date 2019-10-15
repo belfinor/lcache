@@ -2,18 +2,19 @@
 
 Embed caching library for Golang
 
-## About
+## Summary
 
-* Written on pure Go
 * Require Go >= 1.12
+* Written on Go and only available for Go
 * Embed library
-* Stora data as interfaces
+* Store data as interfaces
 * Don't create new go-routine
 * Thread-safe
 * Store data as key/value
 * Support TTL for cache values
 * Access through cache
 * Caching single object
+* Does not support versioned values
 
 ## Install
 
@@ -41,13 +42,13 @@ var cache *lcache.Cache = lcache.New(&lcache.Config{TTL: 86400, Size: 102400, No
 
 В случае достижения максимального количества элементов наиболее старые элементы удаляются.
 
-### Манипулирование значениями в кэше
+### Cache values
 
-В качестве ключей кэша используются строки, а в качестве значений могут быть использованы произвольные объекты.
+Cache key is a string value.
 
 #### Set/Get
 
-При помощи методов Get/Set можно задать получить значение из кэша. Если значения в кэше нет, то возвращается *nil*.
+Get - get value from cache; Set - save data to cache. If value not found, return value is *nil*.
 
 ```
 cache.Set("1", "11")
@@ -56,7 +57,7 @@ cache.Set("2",int64(22))
 fmt.Println( cache.Get("1").(string), cache.Get("2").(int64), cache.Get("3") == nil )
 ```
 
-#### Доступ через кэш (Fetch)
+#### Access through cache (Fetch)
 
 ```
 tm := cache.Fetch( "123", func(k string) interface{} {
