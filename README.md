@@ -1,20 +1,20 @@
 # lcache
 
-Embed caching library for Golang
+Embedded caching library for Golang
 
 ## Summary
 
 * Require Go >= 1.12
-* Written on Go and only available for Go
-* Embed library
-* Store data as interfaces
-* Don't create new go-routine
+* Written on Go
+* Embedded library
+* Store data as is (key is string, value - interface)
+* Don't create new go-routines
 * Thread-safe
-* Store data as key/value
 * Support TTL for cache values
 * Access through cache
 * Caching single object
 * Does not support versioned values
+* Easy to use
 
 ## Install
 
@@ -30,15 +30,15 @@ go get github.com/belfinor/lcache
 import "github.com/belfinor/lcache"
 ```
 
-### Create cache object
+### Create cache
 
 ```
 var cache *lcache.Cache = lcache.New(&lcache.Config{TTL: 86400, Size: 102400, Nodes: 16})
 ```
 
-In this example we create cache object. Cache stores data to 16 buckets. 102400 is expeted maximum key/value pairs in cache. 86400 - value TTL (86400 second = 1 day).
+In this example we create cache object. The object can be used in a multi-threaded access environment. The cache stores data in 16 buckets and expected values limit is 102400 (in practice, one and a half times more). 86400 - TTL in seconds for all created objects.
 
-You can create as many cache objects as you need in the program (one cache per object class). 
+You can create as many cache objects as you need in the program (one cache per object class).
 
 
 ### Cache values
@@ -92,7 +92,8 @@ fmt.Println( cache.Get("inc").(int64)) // 3
 
 ### Caching single object
 
-Атомы кэширования *lcache.Atom* - это упрощенная реализация *lcache.Cache*, которая позволяет закэшировать один объект на заданное время, после истечения времени значение станет равным *nil*. Atom - потокобезопасен. Пример работы с атомом ниже:
+If you need to cache only one object then you can use *lcache.Atom*. An object can be used in a multi-threaded access environment. Example how to use below:
+
 
 ```
 package main
@@ -122,3 +123,7 @@ func main() {
 }
 
 ```
+
+# Used in:
+
+* LiveJournal recommender system and stat services
