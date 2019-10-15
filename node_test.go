@@ -1,8 +1,8 @@
 package lcache
 
 // @author  Mikhail Kirillov <mikkirillov@yandex.ru>
-// @version 1.000
-// @date    2018-12-13
+// @version 1.001
+// @date    2019-10-15
 
 import (
 	"strconv"
@@ -17,11 +17,11 @@ func TestNode(t *testing.T) {
 		t.Fatal("makeNode failed")
 	}
 
-	for i := 0; i < 20; i++ {
+	for i := 0; i < 30; i++ {
 		n.set(strconv.Itoa(i), i*2, time.Now().Unix()+10)
 	}
 
-	if n.size() != 10 {
+	if n.size() != 14 {
 		t.Fatal("invalid node size")
 	}
 
@@ -48,10 +48,6 @@ func TestNode(t *testing.T) {
 	}
 
 	n.set("14", 140, time.Now().Unix()+20)
-
-	if n.queue.Back().Value.(string) != "14" {
-		t.Fatal("move element after set not work")
-	}
 
 	if n.get("14") == nil || n.get("14").(int) != 140 {
 		t.Fatal("set new value for exists key not work")
