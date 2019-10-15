@@ -1,34 +1,35 @@
 # lcache
 
-Встраиваемая библиотека кэширования для Go.
+Embed caching library for Golang
 
-## Характерные особенности
+## About
 
-* Написана на чистом Go
-* Для использования встраивается в приложение
-* Хранит данные в первоначальном виде, тем самым снижаются расходы на сериализацию данных
-* Не порождает фоновых потоков
-* Оптимизирована для использования в многопоточной среде и потокобезопасное
-* Хранит данные в виде ключ/значение
-* Позволяет задать время жизни значений в рамках одного кэша
-* Поддержка доступа через кэш
-* Атомы кэширования
+* Written on pure Go
+* Require Go >= 1.12
+* Embed library
+* Stora data as interfaces
+* Don't create new go-routine
+* Thread-safe
+* Store data as key/value
+* Support TTL for cache values
+* Access through cache
+* Caching single object
 
-## Установка
+## Install
 
 ```
 go get github.com/belfinor/lcache
 ```
 
-## Работа с библиотекой
+## Usage
 
-### Подключение
+### Import
 
 ```
 import "github.com/belfinor/lcache"
 ```
 
-### Создание объекта кэша
+### Create cache object
 
 ```
 var cache *lcache.Cache = lcache.New(&lcache.Config{TTL: 86400, Size: 102400, Nodes: 16})
@@ -68,19 +69,19 @@ tm := cache.Fetch( "123", func(k string) interface{} {
 
 #### Delete
 
-Удаляет переданный ключ из кэша
+Delete key from cache
 
 ```
 cache.Delete("123")
 ```
 
-#### Удаление всех ключей
+#### Remove all data
 
 ```
 cache.Flush()
 ```
 
-#### Инкрементальный счетчик
+#### Inc counter
 
 ```
 cache.Inc("inc")
@@ -90,7 +91,7 @@ cache.Inc("inc")
 fmt.Println( cache.Get("inc").(int64)) // 3
 ```
 
-### Атомы кэширования
+### Caching single object
 
 Атомы кэширования *lcache.Atom* - это упрощенная реализация *lcache.Cache*, которая позволяет закэшировать один объект на заданное время, после истечения времени значение станет равным *nil*. Atom - потокобезопасен. Пример работы с атомом ниже:
 
@@ -102,7 +103,7 @@ import "github.com/belfinor/lcache"
 
 func main() {
 
-  atom := lcache.NewAtom(600) // TTL = 600 секунд
+  atom := lcache.NewAtom(600) // TTL = 600 second
 
   fmt.Println( atom.Get() ) // <nil>
 

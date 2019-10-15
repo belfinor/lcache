@@ -1,26 +1,35 @@
 package lcache
 
 // @author  Mikhail Kirillov <mikkirillov@yandex.ru>
-// @version 1.004
-// @date    2018-12-13
+// @version 1.005
+// @date    2019-10-15
 
 import (
-	"container/list"
 	"sync"
+)
+
+const (
+	coeff_limit     float64 = 1.1
+	coeff_threshold float64 = 0.8
 )
 
 type node struct {
 	sync.RWMutex
-	data  map[string]*item
-	queue *list.List
-	limit int
+	data      map[string]*item
+	prev      map[string]*item
+	limit     int
+	total     int
+	prevTotal int
+	threshold int
 }
 
 func makeNode(limit int) *node {
 	return &node{
-		data:  make(map[string]*item, limit+10),
-		queue: list.New(),
-		limit: limit,
+		data:      make(map[string]*item, int(float64(limit)*coeff_limit)),
+		prev:      map[string]*item{},
+		limit:     limit,
+		threshold: int(float64(limit) * coeff_threshold),
+		total:     0,
 	}
 }
 
@@ -28,8 +37,20 @@ func (n *node) get(key string) interface{} {
 	n.RLock()
 	defer n.RUnlock()
 
-	if v, h := n.data[key]; h && v.isAlive() {
-		return v.data
+	if v, h := n.data[key]; h {
+
+		if v.isAlive() {
+			return v.data
+		}
+
+		return nil
+	}
+
+	if v, h := n.prev[key]; h {
+
+		if v.isAlive() {
+			return v.data
+		}
 	}
 
 	return nil
@@ -42,22 +63,20 @@ func (n *node) set(key string, value interface{}, before int64) {
 	if old, has := n.data[key]; has {
 		old.expire = before
 		old.data = value
-		n.queue.MoveToBack(old.element)
 	} else {
-		e := n.queue.PushBack(key)
-		n.data[key] = &item{data: value, expire: before, element: e}
 		n.gc()
+		n.total++
+		n.data[key] = &item{data: value, expire: before}
 	}
 }
 
 func (n *node) gc() {
-	queue := n.queue
 
-	if queue.Len() > n.limit {
-		first := queue.Front()
-		key := first.Value.(string)
-		delete(n.data, key)
-		queue.Remove(first)
+	if n.total >= n.threshold {
+		n.prev = n.data
+		n.data = make(map[string]*item, int(float64(n.limit)*coeff_limit))
+		n.prevTotal = n.total
+		n.total = 0
 	}
 }
 
@@ -66,10 +85,9 @@ func (n *node) delete(key string) {
 	defer n.Unlock()
 
 	if v, has := n.data[key]; has {
-
-		delete(n.data, key)
-
-		n.queue.Remove(v.element)
+		v.expire = 0
+	} else if v, has := n.prev[key]; has {
+		v.expire = 0
 	}
 }
 
@@ -77,15 +95,17 @@ func (n *node) size() int {
 	n.RLock()
 	defer n.RUnlock()
 
-	return n.queue.Len()
+	return n.total + n.prevTotal
 }
 
 func (n *node) flush() {
 	n.Lock()
 	defer n.Unlock()
 
-	n.data = make(map[string]*item, n.limit+10)
-	n.queue.Init()
+	n.data = make(map[string]*item, int(float64(n.limit)*coeff_limit))
+	n.prev = map[string]*item{}
+	n.total = 0
+	n.prevTotal = 0
 }
 
 func (n *node) inc(key string, before int64) int64 {
@@ -110,12 +130,33 @@ func (n *node) inc(key string, before int64) int64 {
 		}
 
 		old.expire = before
-		n.queue.MoveToBack(old.element)
+
+	} else if old, has := n.prev[key]; has {
+
+		if old.isAlive() {
+
+			if v, ok := old.data.(int64); ok {
+				val = v + 1
+				old.data = val
+			} else {
+				old.data = int64(1)
+			}
+
+		} else {
+			old.data = int64(1)
+		}
+
+		old.expire = before
+
+		n.gc()
+		n.total++
+
+		n.data[key] = old
 
 	} else {
-		e := n.queue.PushBack(key)
-		n.data[key] = &item{data: int64(1), expire: before, element: e}
 		n.gc()
+		n.total++
+		n.data[key] = &item{data: int64(1), expire: before}
 	}
 
 	return val
