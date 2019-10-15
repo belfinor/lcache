@@ -80,7 +80,7 @@ cache.Delete("123")
 cache.Flush()
 ```
 
-#### Inc counter
+#### Increment
 
 ```
 cache.Inc("inc")
@@ -89,6 +89,8 @@ cache.Inc("inc")
 
 fmt.Println( cache.Get("inc").(int64)) // 3
 ```
+
+*int64* is type of value.
 
 ### Caching single object
 
