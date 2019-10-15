@@ -68,7 +68,7 @@ Method *Fetch* return value if it's found in cache. Otherwise call func to get v
 
 #### Delete
 
-Delete key from cache
+Delete key from cache.
 
 ```
 cache.Delete("123")
