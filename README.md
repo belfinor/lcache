@@ -36,11 +36,10 @@ import "github.com/belfinor/lcache"
 var cache *lcache.Cache = lcache.New(&lcache.Config{TTL: 86400, Size: 102400, Nodes: 16})
 ```
 
-В этом примере создается объект кэша, в котором будут хранится максимум 102400 значений, распределенные внутри по 16 нодами (для оптимизации параллельного доступа, а для синхронизации используется RWMutex, свой для каждой ноды) с временем жизни 86400 секунд.
+In this example we create cache object. Cache stores data to 16 buckets. 102400 is expeted maximum key/value pairs in cache. 86400 - value TTL (86400 second = 1 day).
 
-В программе можно создавать неограниченное число объектов-кэшей индивидуальных под конкретные нужды (новый кэш не порождает новых горутин).
+You can create as many cache objects as you need in the program (one cache per object class). 
 
-В случае достижения максимального количества элементов наиболее старые элементы удаляются.
 
 ### Cache values
 
@@ -65,8 +64,7 @@ tm := cache.Fetch( "123", func(k string) interface{} {
   }).(int64)
 ```
 
-Метод *Fetch* работает следующим образом, если значение есть в кэше, то он сразу возвращает его. Если его нет, то для получения
-значения используется переданная функция. В случае отличного от *nil* значения оно помещается в кэш и возвращается в качестве значения *Fetch*. Если *nil*, то в кэш ничего не кладется и возвращается *nil*.
+Method *Fetch* return value if it's found in cache. Otherwise call func to get value and store result to cache. If func could not get value then return value is *nil*.
 
 #### Delete
 
