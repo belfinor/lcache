@@ -100,9 +100,7 @@ fmt.Println(cache.DecBy("inc",8)) // 0
 
 ```
 
-Minimal Dec/DecBy result value is *int64(0)*.
-
-*int64* is type of value.
+*int64* is type of result value. Min Dec/DecBy return value is *int64(0)*.
 
 ### Caching single object
 
