@@ -1,8 +1,8 @@
 package lcache
 
 // @author  Mikhail Kirillov <mikkirillov@yandex.ru>
-// @version 1.001
-// @date    2018-12-19
+// @version 1.002
+// @date    2019-10-30
 
 import (
 	"strconv"
@@ -66,5 +66,31 @@ func TestCache(t *testing.T) {
 		if cache.Get(strconv.Itoa(i)).(int) != i+13 {
 			t.Fatal("cache with one node not worl")
 		}
+	}
+
+	for i := 0; i < 10; i++ {
+		if cache.Inc("cnt") != int64(i+1) {
+			t.Fatal("Inc not work")
+		}
+	}
+
+	for i := 0; i < 3; i++ {
+		if cache.Dec("cnt") != int64(9-i) {
+			t.Fatal("Dec not work")
+		}
+	}
+
+	if cache.IncBy("cnt", 5) != 12 {
+		t.Fatal("IncBy not work")
+	}
+
+	for i := 0; i < 3; i++ {
+
+		res := cache.DecBy("cnt", 10)
+
+		if i == 0 && res != 2 || i > 0 && res != 0 {
+			t.Fatal("DecBy not work")
+		}
+
 	}
 }

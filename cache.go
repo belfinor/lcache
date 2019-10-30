@@ -1,8 +1,8 @@
 package lcache
 
 // @author  Mikhail Kirillov <mikkirillov@yandex.ru>
-// @version 1.008
-// @date    2019-07-19
+// @version 1.009
+// @date    2019-10-30
 
 import (
 	"time"
@@ -68,7 +68,22 @@ func (c *Cache) Set(key string, value interface{}) {
 
 func (c *Cache) Inc(key string) int64 {
 	n := c.hash.Get([]byte(key))
-	return c.nodes[n].inc(key, c.ttl+time.Now().Unix())
+	return c.nodes[n].incby(key, 1, c.ttl+time.Now().Unix())
+}
+
+func (c *Cache) IncBy(key string, val int64) int64 {
+	n := c.hash.Get([]byte(key))
+	return c.nodes[n].incby(key, val, c.ttl+time.Now().Unix())
+}
+
+func (c *Cache) DecBy(key string, val int64) int64 {
+	n := c.hash.Get([]byte(key))
+	return c.nodes[n].incby(key, -val, c.ttl+time.Now().Unix())
+}
+
+func (c *Cache) Dec(key string) int64 {
+	n := c.hash.Get([]byte(key))
+	return c.nodes[n].incby(key, -1, c.ttl+time.Now().Unix())
 }
 
 func (c *Cache) Fetch(key string, f FETCH_FUNC) interface{} {

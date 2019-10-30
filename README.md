@@ -80,7 +80,7 @@ cache.Delete("123")
 cache.Flush()
 ```
 
-#### Increment
+#### Increment/Decrement
 
 ```
 cache.Inc("inc")
@@ -88,7 +88,19 @@ cache.Inc("inc")
 cache.Inc("inc")
 
 fmt.Println( cache.Get("inc").(int64)) // 3
+
+cache.Dec("inc")
+cache.Dec("inc")
+
+fmt.Println(cache.Get("inc").(int64)) // 1
+
+fmt.Println(cache.IncBy("inc",12)) // 13
+fmt.Println(cache.DecBy("inc",8)) // 5
+fmt.Println(cache.DecBy("inc",8)) // 0
+
 ```
+
+Minimal Dec/DecBy result value is *int64(0)*.
 
 *int64* is type of value.
 

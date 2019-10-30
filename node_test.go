@@ -1,8 +1,8 @@
 package lcache
 
 // @author  Mikhail Kirillov <mikkirillov@yandex.ru>
-// @version 1.001
-// @date    2019-10-15
+// @version 1.002
+// @date    2019-10-30
 
 import (
 	"strconv"
@@ -56,9 +56,36 @@ func TestNode(t *testing.T) {
 	before := time.Now().Unix() + 20
 
 	for i := int64(1); i < 20; i++ {
-		if n.inc("cnt", before) != i {
-			t.Fatal("inc not work")
+		if n.incby("cnt", 1, before) != i {
+			t.Fatal("incby not work")
 		}
+	}
+
+	for i := int64(18); i > -10; i-- {
+
+		res := n.incby("cnt", -1, before)
+
+		if i > 0 {
+			if res != i {
+				t.Fatal("incby -1 not work")
+			}
+		} else {
+			if res != 0 {
+				t.Fatal("expect zero")
+			}
+		}
+	}
+
+	if n.incby("cnt", 15, before) != 15 {
+		t.Fatal("incby not work")
+	}
+
+	if n.incby("cnt", -10, before) != 5 {
+		t.Fatal("incby not work")
+	}
+
+	if n.incby("cnt", -10, before) != 0 {
+		t.Fatal("incby not work")
 	}
 
 	n.flush()

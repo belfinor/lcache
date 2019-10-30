@@ -1,8 +1,8 @@
 package lcache
 
 // @author  Mikhail Kirillov <mikkirillov@yandex.ru>
-// @version 1.005
-// @date    2019-10-15
+// @version 1.006
+// @date    2019-10-30
 
 import (
 	"sync"
@@ -108,25 +108,33 @@ func (n *node) flush() {
 	n.prevTotal = 0
 }
 
-func (n *node) inc(key string, before int64) int64 {
+func max(a1, a2 int64) int64 {
+	if a1 > a2 {
+		return a1
+	}
+
+	return a2
+}
+
+func (n *node) incby(key string, shift int64, before int64) int64 {
 	n.Lock()
 	defer n.Unlock()
 
-	val := int64(1)
+	val := max(shift, 0)
 
 	if old, has := n.data[key]; has {
 
 		if old.isAlive() {
 
 			if v, ok := old.data.(int64); ok {
-				val = v + 1
+				val = max(v+shift, 0)
 				old.data = val
 			} else {
-				old.data = int64(1)
+				old.data = val
 			}
 
 		} else {
-			old.data = int64(1)
+			old.data = val
 		}
 
 		old.expire = before
@@ -136,14 +144,14 @@ func (n *node) inc(key string, before int64) int64 {
 		if old.isAlive() {
 
 			if v, ok := old.data.(int64); ok {
-				val = v + 1
+				val = max(v+shift, 0)
 				old.data = val
 			} else {
-				old.data = int64(1)
+				old.data = val
 			}
 
 		} else {
-			old.data = int64(1)
+			old.data = val
 		}
 
 		old.expire = before
@@ -156,7 +164,7 @@ func (n *node) inc(key string, before int64) int64 {
 	} else {
 		n.gc()
 		n.total++
-		n.data[key] = &item{data: int64(1), expire: before}
+		n.data[key] = &item{data: val, expire: before}
 	}
 
 	return val
