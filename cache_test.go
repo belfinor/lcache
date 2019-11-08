@@ -1,8 +1,8 @@
 package lcache
 
 // @author  Mikhail Kirillov <mikkirillov@yandex.ru>
-// @version 1.002
-// @date    2019-10-30
+// @version 1.003
+// @date    2019-11-08
 
 import (
 	"strconv"
@@ -12,9 +12,15 @@ import (
 
 func TestCache(t *testing.T) {
 
-	cfg := &Config{Nodes: 16, Size: 1600, TTL: 600}
+	cache := New("size=1600 nodes=16 ttl=600")
 
-	cache := New(cfg)
+	if cache == nil {
+		t.Fatal("lcache.New failed")
+	}
+
+	if New("-") != nil {
+		t.Fatal("lcache.New work with invalid dsn")
+	}
 
 	if cache.Size() != 0 {
 		t.Fatal("New create not empty cache")
@@ -55,7 +61,10 @@ func TestCache(t *testing.T) {
 		t.Fatal("fetch not work")
 	}
 
-	cache = New(&Config{Nodes: 1, TTL: 3600, Size: 128})
+	cache = New("size=128 nodes=1 ttl=3600")
+	if cache == nil {
+		t.Fatal("cache.New nodes=1 failed")
+	}
 
 	for i := 0; i < 12; i++ {
 		cache.Set(strconv.Itoa(i), i+13)

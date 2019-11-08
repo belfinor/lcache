@@ -1,13 +1,14 @@
 package lcache
 
 // @author  Mikhail Kirillov <mikkirillov@yandex.ru>
-// @version 1.009
-// @date    2019-10-30
+// @version 1.010
+// @date    2019-11-08
 
 import (
 	"time"
 
 	"github.com/belfinor/chash"
+	"github.com/belfinor/kvstring"
 )
 
 type Cache struct {
@@ -18,35 +19,42 @@ type Cache struct {
 	ttl      int64
 }
 
-type FETCH_FUNC func(key string) interface{}
+type FetchFunc func(key string) interface{}
 
-func New(cfg *Config) *Cache {
+// cache := New("size=1024 nodes=4 ttl=3600")
+func New(dsn string) *Cache {
 
 	c := &Cache{}
 
-	if cfg == nil {
-		cfg = &Config{
-			TTL:   3600,
-			Nodes: 4,
-			Size:  1024,
-		}
+	kv, err := kvstring.New(dsn)
+
+	if err != nil {
+		return nil
 	}
 
-	if cfg.Nodes < 1 {
-		cfg.Nodes = 1
+	nodes := kv.GetInt("nodes", 4)
+	ttl := kv.GetInt64("ttl", 3600)
+	size := kv.GetInt("size", 1024)
+
+	if nodes < 1 {
+		nodes = 1
 	}
 
-	c.nodes = make([]*node, cfg.Nodes)
-	c.nodesNum = cfg.Nodes
-	c.size = cfg.Size
-
-	for i := 0; i < cfg.Nodes; i++ {
-		c.nodes[i] = makeNode(c.size / cfg.Nodes)
+	if size < 32 {
+		size = 32
 	}
 
-	c.ttl = int64(cfg.TTL)
+	c.nodes = make([]*node, nodes)
+	c.nodesNum = nodes
+	c.size = size
 
-	c.hash = chash.New(cfg.Nodes)
+	for i := 0; i < nodes; i++ {
+		c.nodes[i] = makeNode(size / nodes)
+	}
+
+	c.ttl = ttl
+
+	c.hash = chash.New(nodes)
 
 	return c
 }
@@ -86,7 +94,7 @@ func (c *Cache) Dec(key string) int64 {
 	return c.nodes[n].incby(key, -1, c.ttl+time.Now().Unix())
 }
 
-func (c *Cache) Fetch(key string, f FETCH_FUNC) interface{} {
+func (c *Cache) Fetch(key string, f FetchFunc) interface{} {
 	n := c.hash.Get([]byte(key))
 	v := c.nodes[n].get(key)
 
