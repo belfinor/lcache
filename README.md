@@ -36,7 +36,7 @@ import "github.com/belfinor/lcache"
 var cache *lcache.Cache = lcache.New("size=102400 nodes=16 ttl=86400")
 ```
 
-In this example we create cache object. The object can be used in a multi-threaded access environment. The cache stores data in 16 buckets and expected values limit is 102400 (in practice, one and a half times more). 86400 - TTL in seconds for all created objects. New returns *nil* if the dns (*size=102400 nodes=16 ttl=86400*) is invalid.
+In this example we create cache object. The object can be used in a multi-threaded access environment. The cache stores data in 16 buckets and expected values limit is 102400 (in practice, one and a half times more). 86400 - TTL in seconds for all created objects. New returns *nil* if the dsn (*size=102400 nodes=16 ttl=86400*) is invalid.
 
 You can create as many cache objects as you need in the program (one cache per object class).
 
